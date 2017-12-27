@@ -26,7 +26,7 @@ Project is sadly not self-contained.
 
 use behaviour 7 to test the functionality of the unity's NavMesh implementation
 
-Edit Behaviours.cs line:618-619 if you want to compare the First generation the pathfinding with NavMesh.
+Edit Behaviours.cs line:618-619 if you want to compare the First generation the pathfinding with NavMesh. - https://gyazo.com/61566dcc4a3225bf76dcaf892869625a
 
 
 
