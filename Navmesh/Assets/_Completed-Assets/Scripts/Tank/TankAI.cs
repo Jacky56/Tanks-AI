@@ -1,6 +1,7 @@
 using UnityEngine;
 using NPBehave;
 using System.Collections.Generic;
+using UnityEngine.AI;
 
 namespace Complete
 {
@@ -10,6 +11,11 @@ namespace Complete
     */
     public partial class TankAI : MonoBehaviour
     {
+		NavMeshAgent _navMeshAgent;
+
+
+
+
         public int m_PlayerNumber = 1;      // Used to identify which tank belongs to which player.  This is set by this tank's manager.
         public int m_Behaviour = 0;         // Used to select an AI behaviour in the Unity Inspector
 
@@ -27,7 +33,17 @@ namespace Complete
 
         // Start behaviour tree
         private void Start() {
-            Debug.Log("Initialising AI player " + m_PlayerNumber);
+
+			_navMeshAgent = this.GetComponent<NavMeshAgent>();
+			if (_navMeshAgent == null)
+			{
+				print("navmesh not added to " + gameObject.name);	
+			}
+			else
+			{
+			}
+
+			Debug.Log("Initialising AI player " + m_PlayerNumber);
             m_Movement = GetComponent<TankMovement> ();
             m_Shooting = GetComponent<TankShooting> ();
             tree = CreateBehaviourTree();
@@ -39,6 +55,20 @@ namespace Complete
 
 			tree.Start();
         }
+
+
+		private void SetDisination()
+		{
+			if (m_Movement.enabled == true)
+			{
+				Vector3 target = TargetTransform().transform.position;
+				Vector3 movement = transform.forward * m_Movement.m_MovementInputValue * m_Movement.m_Speed * Time.deltaTime;
+				float turn = m_Movement.m_TurnInputValue * m_Movement.m_TurnSpeed * Time.deltaTime;
+				_navMeshAgent.speed = movement.magnitude;
+				_navMeshAgent.SetDestination(target);
+			}
+		}
+
 
         // Register an enemy target 
         public void AddTarget(GameObject target) {

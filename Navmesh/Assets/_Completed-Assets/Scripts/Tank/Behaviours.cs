@@ -59,7 +59,7 @@ namespace Complete
 				case 7:
 					//*** debugging
 					//*** literally craft your own AI
-					return ClassMagna(1f, 1f, 0f, 40, 0.7f, 20, false, false, false, false, false, false, false, false);
+					return ClassMagna(1f, 1f, 0f, 40, 0.7f, 20, true, false, false, false, false, false, false, false);
 
 				default:
                     return new Root (new Action(()=> Turn(0.1f)));
@@ -148,7 +148,7 @@ namespace Complete
 			}
 
 
-			print(angle + "            " + this.transform.InverseTransformPoint(shell.transform.position).magnitude);
+			//print(angle + "            " + this.transform.InverseTransformPoint(shell.transform.position).magnitude);
 
 				if (angle.x >= 0.1f )
 				{
@@ -402,6 +402,23 @@ namespace Complete
 			);
 		}
 
+
+		//***Navmsh
+		private Node NavMesh(float speed,float sightDistance, bool pathFind)
+		{
+			_navMeshAgent.stoppingDistance = sightDistance;
+			return new BlackboardCondition("pathFind", Operator.IS_EQUAL, pathFind, Stops.IMMEDIATE_RESTART,
+				new BlackboardCondition("inSight", Operator.IS_EQUAL, false, Stops.IMMEDIATE_RESTART,
+					new Sequence(
+						new Action(() => Move(speed)),
+						StopTurning(),
+						new Action(() => SetDisination())
+					)
+				)
+			);
+		}
+
+
 		//*** turning based on environment
 		private Node Turning(float turnRate, float speed)
 		{
@@ -597,9 +614,12 @@ namespace Complete
 						//***pathfinding
 						new Selector(
 							//***check if AI can see enemy,if it cant then crappy pathfind
-							PathFind(speed,pathFind),
+
+							//PathFind(speed,pathFind),
+							NavMesh(speed, sightDistance, pathFind),
+
 							//***turns to enemy if not facing directly at it
-							Turning(turnRate,speed)
+							Turning(turnRate, speed)
 						),
 						//***action
 						new Selector(
@@ -617,516 +637,6 @@ namespace Complete
 				)
 			);
 		}
-
-
-
-		//===========================*** ALL CLASSES 0 - 2 ARE OBSOLETE ***=============================// 
-		//===========================*** ALL CLASSES 0 - 2 ARE OBSOLETE ***=============================// 
-		//===========================*** ALL CLASSES 0 - 2 ARE OBSOLETE ***=============================// 
-		//===========================*** ALL CLASSES 0 - 2 ARE OBSOLETE ***=============================// 
-		//===========================*** ALL CLASSES 0 - 2 ARE OBSOLETE ***=============================// 
-
-
-		//class0
-		private Root Class0(float turnRate, float speed, float sightDistance, float dodgeRange,float delay)
-		{
-			return new Root(
-				new Service(0.1f, UpdatePerception,
-					new Selector(
-						//***dodge incoming bullets
-						new BlackboardCondition("seeShell", Operator.IS_SMALLER_OR_EQUAL, dodgeRange, Stops.IMMEDIATE_RESTART,
-							//***gives up on dodging shells if its too close to AI 
-							new Sequence(
-								getNextTurn(),
-								new Action(() => Move(ObjectDistance(this.transform.forward) < 4f ? 0 : speed)),
-								new Wait(0.1f)
-							)
-						),
-
-						//***pathfinding
-						new Selector(
-							//***check if AI can see enemy,if it cant then crappy pathfind
-							new BlackboardCondition("inSight", Operator.IS_EQUAL, false, Stops.IMMEDIATE_RESTART,
-								new Selector(
-									//***if theres nothing in front of the AI it move forward and stop turning
-									new BlackboardCondition("forward", Operator.IS_GREATER_OR_EQUAL, 4f, Stops.IMMEDIATE_RESTART,
-									new Sequence(
-										new Action(() => Move(speed)),
-										StopTurning()
-									)
-									),
-									//***if something in front of AI, it turn and stop moving
-									new Sequence(
-										getNextTurn(),
-										StopMoving(),
-										new Wait(0.15f)
-									)
-								)
-							),
-							//***turns to enemy if not facing directly at it
-							new BlackboardCondition("targetOffCentre", Operator.IS_GREATER_OR_EQUAL, 0.1f, Stops.IMMEDIATE_RESTART,
-
-								//***stop moving if theres a non enemy in front of it , it still turns to enemy 
-								new Selector(
-
-									//*** idk if compound conditional statments exist
-									new Selector(
-										new BlackboardCondition("forward", Operator.IS_SMALLER_OR_EQUAL, 4f, Stops.IMMEDIATE_RESTART,
-											new Selector(
-												new BlackboardCondition("targetOnRight", Operator.IS_EQUAL, true, Stops.IMMEDIATE_RESTART,
-													new Sequence(
-														StopMoving(),
-														new Action(() => Turn(turnRate))
-													)
-												),
-												new BlackboardCondition("targetOnRight", Operator.IS_EQUAL, false, Stops.IMMEDIATE_RESTART,
-													new Sequence(
-														StopMoving(),
-														new Action(() => Turn(-turnRate))
-													)
-												)
-											)
-										),
-										new BlackboardCondition("targetDistance", Operator.IS_SMALLER_OR_EQUAL, 4f, Stops.IMMEDIATE_RESTART,
-											new Selector(
-												new BlackboardCondition("targetOnRight", Operator.IS_EQUAL, true, Stops.IMMEDIATE_RESTART,
-													new Sequence(
-														StopMoving(),
-														new Action(() => Turn(turnRate))
-													)
-												),
-												new BlackboardCondition("targetOnRight", Operator.IS_EQUAL, false, Stops.IMMEDIATE_RESTART,
-													new Sequence(
-														StopMoving(),
-														new Action(() => Turn(turnRate))
-													)
-												)
-											)
-										)
-									),
-
-									//***same thing but allows tank to move, idk how to use 'Sequence' cos im too fuckin' lazy to read the documentation
-									new Selector(
-										new BlackboardCondition("targetOnRight", Operator.IS_EQUAL, true, Stops.IMMEDIATE_RESTART,
-											new Action(() => Turn(turnRate))
-										),
-										new BlackboardCondition("targetOnRight", Operator.IS_EQUAL, false, Stops.IMMEDIATE_RESTART,
-											new Action(() => Turn(-turnRate))
-										)
-									)
-								)
-							)
-						),
-						//***action
-						new Selector(
-							//***move towards enemy depending on sightDistance
-							new BlackboardCondition("targetDistance", Operator.IS_GREATER_OR_EQUAL, sightDistance, Stops.IMMEDIATE_RESTART,
-								new Selector(
-									//***stop moving forward if theres a building in front or enemy is near AI
-									new BlackboardCondition("targetDistance", Operator.IS_GREATER_OR_EQUAL, 4f, Stops.IMMEDIATE_RESTART,
-										new BlackboardCondition("forward", Operator.IS_GREATER_OR_EQUAL, 4f, Stops.IMMEDIATE_RESTART,
-											new Action(() => Move(speed))
-										)
-									),
-									new Sequence(
-										new Selector(
-											new BlackboardCondition("targetOnRight", Operator.IS_EQUAL, true, Stops.IMMEDIATE_RESTART,
-												new Action(() => Turn(turnRate))
-											),
-											new BlackboardCondition("targetOnRight", Operator.IS_EQUAL, false, Stops.IMMEDIATE_RESTART,
-												new Action(() => Turn(-turnRate))
-											)
-										),
-										StopMoving()
-									)
-								)
-							),
-							//*** move backwards if the enemy is too close
-							new BlackboardCondition("targetDistance", Operator.IS_SMALLER_OR_EQUAL, sightDistance * 0.7f, Stops.IMMEDIATE_RESTART,
-								new BlackboardCondition("inSight", Operator.IS_EQUAL, true, Stops.IMMEDIATE_RESTART,
-									//***if theres nothing behind AI it will go backwards, and shoot
-									new Selector(
-										new BlackboardCondition("behind", Operator.IS_GREATER_OR_EQUAL, 4f, Stops.IMMEDIATE_RESTART,
-											new Sequence(
-												new Action(() => Move(-speed))
-											)
-										),
-										new Sequence(
-											StopMoving(),
-											StopTurning(),
-											new Wait(delay),
-											RandomFire()
-										)
-									)
-								)
-							),
-							//*** fire to enemy if in sight
-							new BlackboardCondition("inSight", Operator.IS_EQUAL, true, Stops.IMMEDIATE_RESTART,
-								new Sequence(
-									StopTurning(),
-									StopMoving(),
-									new Wait(delay),
-									CalculatedFire(0)
-								)
-							)
-							
-						),
-						//*** spaghetti code
-						StopMoving(),
-						StopTurning()
-					)
-				)
-			);
-		}
-
-
-
-
-
-
-
-
-
-		//Class1
-		private Root Class1(float turnRate, float speed, float sightDistance,float dodgeRange)
-		{
-			return new Root(
-				new Service(0.1f, UpdatePerception,
-					new Selector(
-						//***dodge incoming bullets
-						new BlackboardCondition("forward", Operator.IS_GREATER_OR_EQUAL, 4f, Stops.IMMEDIATE_RESTART,
-							new BlackboardCondition("seeShell", Operator.IS_SMALLER_OR_EQUAL, dodgeRange, Stops.IMMEDIATE_RESTART,
-								//***gives up on dodging shells if its too close to AI 
-								new Selector(
-									//check if AI can counter Fire enemy shells
-									new BlackboardCondition("inSight", Operator.IS_EQUAL, true, Stops.IMMEDIATE_RESTART,
-										new BlackboardCondition("targetAhead", Operator.IS_SMALLER_OR_EQUAL, 1f, Stops.IMMEDIATE_RESTART,
-											new BlackboardCondition("targetAhead", Operator.IS_GREATER_OR_EQUAL, 0.95f, Stops.IMMEDIATE_RESTART,
-												new Sequence(
-													CalculatedFire(0),
-													getNextTurn(),
-													new Action(() => Move(ObjectDistance(this.transform.forward) < 4f ? 0 : speed))
-												)		
-											)
-										)
-									),
-									new Sequence(
-										getNextTurn(),
-										new Action(() => Move(ObjectDistance(this.transform.forward) < 4f ? 0 : speed)),
-										new Wait(0.1f)
-									)
-								)	
-							
-							)
-						),
-
-						//***pathfinding
-						new Selector(
-							//***check if AI can see enemy,if it cant then crappy pathfind
-							new BlackboardCondition("inSight", Operator.IS_EQUAL, false, Stops.IMMEDIATE_RESTART,
-								new Selector(
-									//***if theres nothing in front of the AI it move forward and stop turning
-									new BlackboardCondition("forward", Operator.IS_GREATER_OR_EQUAL, 4f, Stops.IMMEDIATE_RESTART,
-									new Sequence(
-										new Action(() => Move(speed)),
-										StopTurning()
-									)
-									),
-									//***if something in front of AI, it turn and stop moving
-									new Sequence(
-										getNextTurn(),
-										StopMoving(),
-										new Wait(0.15f)
-									)
-								)
-							),
-							//***turns to enemy if not facing directly at it
-							new BlackboardCondition("targetOffCentre", Operator.IS_GREATER_OR_EQUAL, 0.05f, Stops.IMMEDIATE_RESTART,
-								
-								//***stop moving if theres a non enemy in front of it , it still turns to enemy 
-								new Selector(
-
-									//*** idk if compound conditional statments exist
-									new Selector(
-										new BlackboardCondition("forward", Operator.IS_SMALLER_OR_EQUAL, 4f, Stops.IMMEDIATE_RESTART,
-											new Selector(
-												new BlackboardCondition("targetOnRight", Operator.IS_EQUAL, true, Stops.IMMEDIATE_RESTART,
-													new Sequence(
-														StopMoving(),
-														new Action(() => Turn(turnRate))
-													)
-												),
-												new BlackboardCondition("targetOnRight", Operator.IS_EQUAL, false, Stops.IMMEDIATE_RESTART,
-													new Sequence(
-														StopMoving(),
-														new Action(() => Turn(-turnRate))
-													)
-												)
-											)
-										),
-										new BlackboardCondition("targetDistance", Operator.IS_SMALLER_OR_EQUAL, 4f, Stops.IMMEDIATE_RESTART,
-											new Selector(
-												new BlackboardCondition("targetOnRight", Operator.IS_EQUAL, true, Stops.IMMEDIATE_RESTART,
-													new Sequence(
-														new Action(() => Move(-speed)),
-														new Action(() => Turn(-turnRate))
-													)
-												),
-												new BlackboardCondition("targetOnRight", Operator.IS_EQUAL, false, Stops.IMMEDIATE_RESTART,
-													new Sequence(
-														new Action(() => Move(-speed)),
-														new Action(() => Turn(turnRate))
-													)
-												)
-											)
-										)
-									),
-									//***same thing but allows tank to move, idk how to use 'Sequence' cos im too fuckin' lazy to read the documentation
-									new Selector(
-										new BlackboardCondition("targetOnRight", Operator.IS_EQUAL, true, Stops.IMMEDIATE_RESTART,
-											new Action(() => Turn(turnRate))
-										),
-										new BlackboardCondition("targetOnRight", Operator.IS_EQUAL, false, Stops.IMMEDIATE_RESTART,
-											new Action(() => Turn(-turnRate))
-										)
-									)
-								)
-								
-
-							//*** old
-							//new Selector(
-							//	new BlackboardCondition("targetOnRight", Operator.IS_EQUAL, true, Stops.IMMEDIATE_RESTART,
-							//		new Action(() => Turn(turnRate))
-							//	),
-							//	new BlackboardCondition("targetOnRight", Operator.IS_EQUAL, false, Stops.IMMEDIATE_RESTART,
-							//		new Action(() => Turn(-turnRate))
-							//	)
-							//)
-							)
-						),
-						//***action
-						new Selector(
-							//***move towards enemy depending on sightDistance
-							new BlackboardCondition("targetDistance", Operator.IS_GREATER_OR_EQUAL, sightDistance, Stops.IMMEDIATE_RESTART,
-								new Selector(
-									//***stop moving forward if theres a building in front or enemy is near AI
-									new BlackboardCondition("targetDistance", Operator.IS_GREATER_OR_EQUAL, 4f, Stops.IMMEDIATE_RESTART,
-										new BlackboardCondition("forward", Operator.IS_GREATER_OR_EQUAL, 4f, Stops.IMMEDIATE_RESTART,
-											new Action(() => Move(speed))
-										)
-									),
-									
-									new Sequence(
-										new Selector(
-											new BlackboardCondition("targetOnRight", Operator.IS_EQUAL, true, Stops.IMMEDIATE_RESTART,
-												new Action(() => Turn(turnRate))
-											),
-											new BlackboardCondition("targetOnRight", Operator.IS_EQUAL, false, Stops.IMMEDIATE_RESTART,
-												new Action(() => Turn(-turnRate))
-											)
-										),
-										StopMoving()
-									)
-
-								//*** old
-								//new BlackboardCondition("targetOnRight", Operator.IS_EQUAL, true, Stops.IMMEDIATE_RESTART,
-								//	new Sequence(
-								//		new Action(() => Turn(turnRate)),
-								//		StopMoving()
-								//	)
-
-								//),
-								//new BlackboardCondition("targetOnRight", Operator.IS_EQUAL, false, Stops.IMMEDIATE_RESTART,
-								//	new Sequence(
-								//		new Action(() => Turn(-turnRate)),
-								//		StopMoving()
-								//	)
-								//)
-								)
-							),
-							//*** move backwards if the enemy is too close
-							new BlackboardCondition("targetDistance", Operator.IS_SMALLER_OR_EQUAL, sightDistance * 0.7f, Stops.IMMEDIATE_RESTART,
-								new BlackboardCondition("inSight", Operator.IS_EQUAL, true, Stops.IMMEDIATE_RESTART,
-									//***if theres nothing behind AI it will go backwards, and shoot
-									new Selector(
-										new BlackboardCondition("behind", Operator.IS_GREATER_OR_EQUAL, 4f, Stops.IMMEDIATE_RESTART,
-											new Sequence(
-												new Action(() => Move(-speed)),
-												CalculatedFire(12f)
-											)
-										),
-
-										new Sequence(
-											StopMoving(),
-											StopTurning(),
-											CalculatedFire(0)
-										)
-									)
-								)
-							),
-							//*** fire to enemy if in sight
-							new BlackboardCondition("inSight", Operator.IS_EQUAL, true, Stops.IMMEDIATE_RESTART,
-								new Sequence(
-									StopTurning(),
-									StopMoving(),
-									CalculatedFire(0)
-								)
-							)
-						),
-						//*** spaghetti code
-						StopMoving(),
-						StopTurning()
-					)
-				)
-            );
-        }
-
-
-		//Class2
-		private Root Class2(float turnRate, float speed, float sightDistance, float dodgeRange)
-		{
-			return new Root(
-				new Service(0.1f, UpdatePerception,
-					new Selector(
-						//***dodge incoming bullets
-						new BlackboardCondition("seeShell", Operator.IS_SMALLER_OR_EQUAL, dodgeRange, Stops.IMMEDIATE_RESTART,
-							//***gives up on dodging shells if its too close to AI 
-							new Selector(
-								//check if AI can counter Fire enemy shells
-								new BlackboardCondition("inSight", Operator.IS_EQUAL, true, Stops.IMMEDIATE_RESTART,
-									new BlackboardCondition("targetAhead", Operator.IS_SMALLER_OR_EQUAL, 1f, Stops.IMMEDIATE_RESTART,
-										new BlackboardCondition("targetAhead", Operator.IS_GREATER_OR_EQUAL, 0.95f, Stops.IMMEDIATE_RESTART,
-											new Sequence(
-												CalculatedFire(0),
-												getNextTurn(),
-												new Action(() => Move(ObjectDistance(-this.transform.forward) < 4f ? 0 : -speed))
-											)
-										)
-									)
-								),
-								new Sequence(
-									getNextTurn(),
-									new Action(() => Move(ObjectDistance(-this.transform.forward) < 4f ? 0 : -speed)),
-									new Wait(0.1f)
-								)
-							)
-
-						),
-
-						//***pathfinding
-						new Selector(
-							//***check if AI can see enemy,if it cant then crappy pathfind
-							new BlackboardCondition("inSight", Operator.IS_EQUAL, false, Stops.IMMEDIATE_RESTART,
-								new Selector(
-									//***if theres nothing in front of the AI it move forward and stop turning
-									new BlackboardCondition("forward", Operator.IS_GREATER_OR_EQUAL, 4f, Stops.IMMEDIATE_RESTART,
-									new Sequence(
-										new Action(() => Move(speed)),
-										StopTurning()
-									)
-									),
-									//***if something in front of AI, it turn and stop moving
-									new Sequence(
-										getNextTurn(),
-										StopMoving(),
-										new Wait(0.15f)
-									)
-								)
-							),
-							//***turns to enemy if not facing directly at it
-							new BlackboardCondition("targetOffCentre", Operator.IS_GREATER_OR_EQUAL, 0.05f, Stops.IMMEDIATE_RESTART,
-
-								//***stop moving if theres a non enemy in front of it , it still turns to enemy 
-								new Selector(
-
-									//*** idk if compound conditional statments exist
-									new Selector(
-										new BlackboardCondition("forward", Operator.IS_SMALLER_OR_EQUAL, 4f, Stops.IMMEDIATE_RESTART,
-											new Selector(
-												new BlackboardCondition("targetOnRight", Operator.IS_EQUAL, true, Stops.IMMEDIATE_RESTART,
-													new Sequence(
-														StopMoving(),
-														new Action(() => Turn(turnRate))
-													)
-												),
-												new BlackboardCondition("targetOnRight", Operator.IS_EQUAL, false, Stops.IMMEDIATE_RESTART,
-													new Sequence(
-														StopMoving(),
-														new Action(() => Turn(-turnRate))
-													)
-												)
-											)
-										),
-										new BlackboardCondition("targetDistance", Operator.IS_SMALLER_OR_EQUAL, 4f, Stops.IMMEDIATE_RESTART,
-											new Selector(
-												new BlackboardCondition("targetOnRight", Operator.IS_EQUAL, true, Stops.IMMEDIATE_RESTART,
-													new Sequence(
-														new Action(() => Move(-speed)),
-														new Action(() => Turn(-turnRate))
-													)
-												),
-												new BlackboardCondition("targetOnRight", Operator.IS_EQUAL, false, Stops.IMMEDIATE_RESTART,
-													new Sequence(
-														new Action(() => Move(-speed)),
-														new Action(() => Turn(turnRate))
-													)
-												)
-											)
-										)
-									),
-									//***same thing but allows tank to move, idk how to use 'Sequence' cos im too fuckin' lazy to read the documentation
-									new Selector(
-										new BlackboardCondition("targetOnRight", Operator.IS_EQUAL, true, Stops.IMMEDIATE_RESTART,
-											new Action(() => Turn(turnRate))
-										),
-										new BlackboardCondition("targetOnRight", Operator.IS_EQUAL, false, Stops.IMMEDIATE_RESTART,
-											new Action(() => Turn(-turnRate))
-										)
-									)
-								)
-							)
-						),
-						//***action
-						new Selector(
-							//*** move backwards if the enemy is too close
-							new BlackboardCondition("targetDistance", Operator.IS_SMALLER_OR_EQUAL, sightDistance * 1.3f, Stops.IMMEDIATE_RESTART,
-								new BlackboardCondition("inSight", Operator.IS_EQUAL, true, Stops.IMMEDIATE_RESTART,
-									//***if theres nothing behind AI it will go backwards, and shoot
-									new Selector(
-										new BlackboardCondition("behind", Operator.IS_GREATER_OR_EQUAL, 4f, Stops.IMMEDIATE_RESTART,
-											new Sequence(
-												new Action(() => Move(-speed)),
-												RandomFire()
-
-												//CalculatedFire(12f)
-											)
-										),
-
-										new Sequence(
-											StopMoving(),
-											StopTurning(),
-											new BlackboardCondition("targetDistance", Operator.IS_SMALLER_OR_EQUAL, sightDistance *0.9f, Stops.IMMEDIATE_RESTART,
-												CalculatedFire(12f)
-											)
-											//CalculatedFire(0)
-										)
-									)
-								)
-							)
-						),
-						//*** spaghetti code
-						StopMoving(),
-						StopTurning()
-					)
-				)
-			);
-		}
-
-
-
-
-
-		/* Example behaviour trees */
 
 		// Constantly spin and fire on the spot 
 		private Root SpinBehaviour(float turn, float shoot) {
