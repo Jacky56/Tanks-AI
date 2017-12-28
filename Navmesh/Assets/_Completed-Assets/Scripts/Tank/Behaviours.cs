@@ -128,6 +128,36 @@ namespace Complete
 			return nearestShell;
 		}
 
+		//gets the nearest health cube
+		private CubeScript getNearestHealthCube()
+		{
+			CubeScript[] cubes = GameObject.FindObjectsOfType(typeof(CubeScript)) as CubeScript[];
+
+			if (cubes.Length > 0 && cubes.Length < 10)
+			{
+
+				CubeScript nearestCube = cubes[cubes.Length - 1];
+
+				foreach (CubeScript cube in cubes)
+				{
+					Vector3 targetPos = cube.transform.position;
+					Vector3 localPos = this.transform.InverseTransformPoint(targetPos);
+
+					Vector3 nearestPos = cube.transform.position;
+					Vector3 nearestLocalPos = this.transform.InverseTransformPoint(nearestPos);
+
+					//ignore it's own shells to deem 'nearest' shell
+					if (localPos.magnitude < nearestLocalPos.magnitude)
+					{
+						nearestCube = cube;
+					}
+				}
+				return nearestCube;
+			}
+
+			return null;
+		}
+
 		//returns best turn outcome for dodging the closest bullet
 		private float getDodgeAngle(ShellExplosion shell, bool defensiveDodge)
 		{
@@ -166,6 +196,35 @@ namespace Complete
 
 		}
 
+		//used to turn to the nearest health cube
+		private Node getCubeTurn(CubeScript cube,float turnRate)
+		{
+			//Vector3 getDirection = (cube.transform.position - this.transform.position).normalized;
+
+
+			if (cube != null)
+			{
+				Vector3 targetPos = cube.transform.position;
+				Vector3 localPos = this.transform.InverseTransformPoint(targetPos);
+				Vector3 heading = localPos.normalized;
+
+				blackboard["targetOnRight"] = heading.x > 0;
+				if (heading.x > 0)
+				{
+					print("right");
+					return new Action(() => Turn(turnRate));
+				}
+				else
+				{
+					print("left");
+					return new Action(() => Turn(turnRate));
+				}
+			}
+			return new Action(() => Turn(0));
+
+
+
+		}
 
 		private Node getDodgeTurn(bool defensiveDodge)
 		{
@@ -406,7 +465,7 @@ namespace Complete
 		//***Navmsh
 		private Node NavMesh(float speed,float sightDistance, bool pathFind)
 		{
-			_navMeshAgent.stoppingDistance = sightDistance;
+			navMeshAgent.stoppingDistance = sightDistance;
 			return new BlackboardCondition("pathFind", Operator.IS_EQUAL, pathFind, Stops.IMMEDIATE_RESTART,
 				new BlackboardCondition("inSight", Operator.IS_EQUAL, false, Stops.IMMEDIATE_RESTART,
 					new Sequence(
@@ -417,6 +476,24 @@ namespace Complete
 				)
 			);
 		}
+
+		private Node getHealthCube(float speed,float turnRate, float sightDistance)
+		{
+			navMeshAgent.stoppingDistance = sightDistance;
+
+			return new BlackboardCondition("healthCubeExist", Operator.IS_NOT_EQUAL, null, Stops.IMMEDIATE_RESTART,
+				new Sequence(
+					new Action(() => print(getNearestHealthCube())),
+					new Action(() => Move(speed)),
+					getCubeTurn(getNearestHealthCube(), turnRate),
+					new Action(() => SetDisination(getNearestHealthCube()))
+
+				)
+			);
+		}
+
+
+
 
 
 		//*** turning based on environment
@@ -609,8 +686,10 @@ namespace Complete
 			return new Root(
 				new Service(0.1f, UpdatePerception,
 					new Selector(
+						getHealthCube(speed, turnRate, 0f),
 						//***dodge incoming bullets
-						Dodge( dodgeRange,  speed,  dodge, defensiveDodge, counter),
+						Dodge(dodgeRange, speed, dodge, defensiveDodge, counter),
+
 						//***pathfinding
 						new Selector(
 							//***check if AI can see enemy,if it cant then crappy pathfind
@@ -671,6 +750,11 @@ namespace Complete
         }
 
         private void UpdatePerception() {
+			TankHealth tankHealth = gameObject.GetComponent<TankHealth>();
+
+			blackboard["health"] = tankHealth.m_CurrentHealth;
+			blackboard["healthCubeExist"] = getNearestHealthCube();
+
 
 			//used for enabling or disabling features
 			blackboard["pathFind"] = true;

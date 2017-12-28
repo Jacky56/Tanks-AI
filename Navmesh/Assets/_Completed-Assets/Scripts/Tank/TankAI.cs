@@ -11,7 +11,7 @@ namespace Complete
     */
     public partial class TankAI : MonoBehaviour
     {
-		NavMeshAgent _navMeshAgent;
+		NavMeshAgent navMeshAgent;
 
 
 
@@ -34,8 +34,9 @@ namespace Complete
         // Start behaviour tree
         private void Start() {
 
-			_navMeshAgent = this.GetComponent<NavMeshAgent>();
-			if (_navMeshAgent == null)
+			navMeshAgent = this.GetComponent<NavMeshAgent>();
+
+			if (navMeshAgent == null)
 			{
 				print("navmesh not added to " + gameObject.name);	
 			}
@@ -56,22 +57,40 @@ namespace Complete
 			tree.Start();
         }
 
-
+		//for enemy
 		private void SetDisination()
 		{
 			if (m_Movement.enabled == true)
 			{
 				Vector3 target = TargetTransform().transform.position;
 				Vector3 movement = transform.forward * m_Movement.m_MovementInputValue * m_Movement.m_Speed * Time.deltaTime;
-				float turn = m_Movement.m_TurnInputValue * m_Movement.m_TurnSpeed * Time.deltaTime;
-				_navMeshAgent.speed = movement.magnitude;
-				_navMeshAgent.SetDestination(target);
+				navMeshAgent.speed = movement.magnitude;
+				navMeshAgent.SetDestination(target);
 			}
 		}
 
+		//setting target
+		private void SetDisination(CubeScript thing)
+		{
+			if (m_Movement.enabled == true)
+			{
+				if (thing != null)
+				{
+					Vector3 target = thing.transform.position;
+					print(target);
+					Vector3 movement = transform.forward * m_Movement.m_MovementInputValue * m_Movement.m_Speed * Time.deltaTime;
+					navMeshAgent.speed = movement.magnitude;
+					navMeshAgent.SetDestination(target);
+				}
+				else
+				{
+					SetDisination();
+				}
+			}
+		}
 
-        // Register an enemy target 
-        public void AddTarget(GameObject target) {
+		// Register an enemy target 
+		public void AddTarget(GameObject target) {
             m_Targets.Add(target);
         }
 
