@@ -9,6 +9,8 @@ Placeholder project, if I have time in the summer, I'll resubmit a project that 
 
 No changes with the AI except for adding a new pathfinding method to the system
 
+Read 'Games AI tech demo' in Report folder before running testing the code!
+
 Unity version: Unity 2017.1.0f3 (64-bit)
 
 

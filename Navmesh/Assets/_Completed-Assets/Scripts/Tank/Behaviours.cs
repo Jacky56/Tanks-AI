@@ -42,33 +42,41 @@ namespace Complete
 
 				case 4:
 
+
+
 					//*** debugging
-					//*** literally craft your own AI
+					//*** dodge/ counter
 					return ClassMagna(1f, 1f, 0f, 40, 0.7f, 30, false, true, false, true, false, false, false, false);
 
 				case 5:
 					//*** debugging
-					//*** literally craft your own AI
+					//*** only fire
 					return ClassMagna(1f, 1f, 0f, 100, 0.7f, 15, false, false, false, false, false, false, false, true);
 
 				case 6:
 					//*** debugging
-					//*** literally craft your own AI
-					return ClassMagna(1f, 1f, 0f, 40, 0.7f, 20, true, false, false, true, true, true, true, true);
+					//*** test for dodging
+					return ClassMagna(1f, 1f, 0f, 40, 0.7f, 20, false, true, false, false, false, false, false, false);
 
 				case 7:
 					//*** debugging
-					//*** literally craft your own AI
+					//*** test for pathfinding 
 					return ClassMagna(1f, 1f, 0f, 40, 0.7f, 20, true, false, false, false, false, false, false, false);
+
+				case 8:
+					//*** debugging
+					//*** case 1 no dodge 
+					return ClassMagna(1f, 1f, 0f, 40, 0.6f, 12, true, false, false, true, true, true, true, true);
 
 				default:
                     return new Root (new Action(()=> Turn(0.1f)));
             }
         }
+		//ClassMagna(turnRate, speed,fireRate, sightDistance, backwardModifier, dodgeRange, bool pathFind, bool dodge, bool defensiveDodge, bool counter, bool forwardMove, bool backwardMove, bool backwardFire, bool fire)
 
-        /* Actions */
+		/* Actions */
 
-        private Node StopTurning() {
+		private Node StopTurning() {
             return new Action(() => Turn(0));
         }
 
@@ -147,19 +155,52 @@ namespace Complete
 				turnType = -1;
 			}
 
+			float right = ObjectDistance(this.transform.right);
+			float left = ObjectDistance(-1 * this.transform.right);
 
 			//print(angle + "            " + this.transform.InverseTransformPoint(shell.transform.position).magnitude);
+			print(angle);
+			if (angle.x >= 0.05f || angle.x <= -0.05f)
+			{
+				if (right > 6 && left > 6)
+				{
+					if (right > left)
+					{
+						//print("right");	
+						return 1 * turnType;
+					}
+					else
+					{
+						//print("left");
+						return -1 * turnType;
+					}
+				}
+				else
+				{
+					if (right > 6)
+					{
+						//print("right");
+						return 1 * turnType;
+					}
+					if (left > 6)
+					{
+						//print("left");
+						return -1 * turnType;
+					}
+				}
+			}
 
-				if (angle.x >= 0.1f )
-				{
-					print("right");
-					return 1 * turnType;
-				}
-				else if(angle.x <= -0.1f)
-				{
-					print("left");
-					return -1 * turnType;
-				}
+
+			//if (angle.x >= 0.1f && right > 8)
+			//{
+			//	print("right");
+			//	return 1 * turnType;
+			//}
+			//else if (angle.x <= -0.1f && left > 8)
+			//{
+			//	print("left");
+			//	return -1 * turnType;
+			//}
 
 			print("forward");
 			return 0;
@@ -315,7 +356,7 @@ namespace Complete
 					}
 					else
 					{
-						return val2 / (30f * (50f / S));
+						return val2 / (30f * (50f / S));	
 					}
 				}
 			}
@@ -334,11 +375,12 @@ namespace Complete
 							//*** countering
 							//***check if AI can counter Fire enemy shells
 							new BlackboardCondition("counter", Operator.IS_EQUAL, counter, Stops.IMMEDIATE_RESTART,
-								new BlackboardCondition("inSight", Operator.IS_EQUAL, true, Stops.IMMEDIATE_RESTART,
 									new BlackboardCondition("targetAhead", Operator.IS_SMALLER_OR_EQUAL, 1f, Stops.IMMEDIATE_RESTART,
-										new BlackboardCondition("targetAhead", Operator.IS_GREATER_OR_EQUAL, 0.75f, Stops.IMMEDIATE_RESTART,
+										new BlackboardCondition("targetAhead", Operator.IS_GREATER_OR_EQUAL, 0.8f, Stops.IMMEDIATE_RESTART,
 											new Sequence(
-												CalculatedFire(0f),
+												new BlackboardCondition("inSight", Operator.IS_EQUAL, true, Stops.IMMEDIATE_RESTART,
+													CalculatedFire(0f)
+												),
 												getDodgeTurn(defensiveDodge),
 												//getNextTurn(),
 												new Selector(
@@ -347,7 +389,7 @@ namespace Complete
 													),
 													//*** AI something kills itself by walking into it's own shells
 													new BlackboardCondition("seeShell", Operator.IS_SMALLER_OR_EQUAL, 12f, Stops.IMMEDIATE_RESTART,
-														new Action(() => Move(speed * 0.5f))
+														new Action(() => Move(speed * 0.6f))
 													),
 													new BlackboardCondition("defensiveDodge", Operator.IS_EQUAL, defensiveDodge, Stops.IMMEDIATE_RESTART,
 														new Action(() => Move(ObjectDistance(-this.transform.forward) < 4f ? 0 : -speed))
@@ -357,7 +399,6 @@ namespace Complete
 											)
 										)
 									)
-								)
 							),
 							new Sequence(
 								getDodgeTurn(defensiveDodge),
@@ -379,7 +420,7 @@ namespace Complete
 
 
 		//***pathfinding
-		private Node PathFind(float speed, bool pathFind)
+		private Node Naive(float speed, bool pathFind)
 		{
 			return new BlackboardCondition("pathFind", Operator.IS_EQUAL, pathFind, Stops.IMMEDIATE_RESTART,
 				new BlackboardCondition("inSight", Operator.IS_EQUAL, false, Stops.IMMEDIATE_RESTART,
@@ -615,7 +656,7 @@ namespace Complete
 						new Selector(
 							//***check if AI can see enemy,if it cant then crappy pathfind
 
-							//PathFind(speed,pathFind),
+							//Naive(speed,pathFind),
 							NavMesh(speed, sightDistance, pathFind),
 
 							//***turns to enemy if not facing directly at it

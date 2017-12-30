@@ -11,7 +11,6 @@ namespace Complete
     */
     public partial class TankAI : MonoBehaviour
     {
-		NavMeshAgent _navMeshAgent;
 
 
 
@@ -55,6 +54,8 @@ namespace Complete
 
 			tree.Start();
         }
+
+		NavMeshAgent _navMeshAgent;
 
 
 		private void SetDisination()
