@@ -1,5 +1,6 @@
 **Teacher's Notes:**
 
+https://www.youtube.com/watch?v=Ke7egefMlts - the video
 
 Behaviour Trees / Waypoint Pathfinder
 

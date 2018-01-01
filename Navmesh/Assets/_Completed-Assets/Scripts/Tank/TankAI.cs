@@ -64,7 +64,7 @@ namespace Complete
 			{
 				Vector3 target = TargetTransform().transform.position;
 				Vector3 movement = transform.forward * m_Movement.m_MovementInputValue * m_Movement.m_Speed * Time.deltaTime;
-				float turn = m_Movement.m_TurnInputValue * m_Movement.m_TurnSpeed * Time.deltaTime;
+				//float turn = m_Movement.m_TurnInputValue * m_Movement.m_TurnSpeed * Time.deltaTime;
 				_navMeshAgent.speed = movement.magnitude;
 				_navMeshAgent.SetDestination(target);
 			}
