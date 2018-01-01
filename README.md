@@ -2,7 +2,7 @@
 
 https://www.youtube.com/watch?v=Ke7egefMlts - the video
 
-Behaviour Trees / Waypoint Pathfinder
+Behaviour Trees(steering behaviours) / Waypoint Pathfinder
 
 case 7 is used to test for Unity's NavMesh (pathfinding feature is the only function which is enabled)
 
